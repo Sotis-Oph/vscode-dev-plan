@@ -1,0 +1,46 @@
+.caption {
+    font-size: large;
+    font-weight: bold;
+    text-align: left;
+}
+
+.ticket {
+    color: cornflowerblue;
+    text-decoration: underline;
+}
+
+.delete-button, .up-button, .down-button, .insert-button{
+	width: 30px;
+    height: 30px;
+}
+
+.action-td {
+    width: 121px;
+    align-content: center;
+}
+
+.planTime, .realTime {
+	width: 50px;
+    align-content: center;
+    padding-left: 10px;
+}
+
+.num {
+    width: 40px;
+    align-content: center;
+    padding-left: 10px;
+}
+
+.done {
+    width: 40px;
+    align-content: center;
+}
+
+.step {
+    font-weight: bold;
+}
+
+.stepTable {
+    border-width: 1px;
+    border: '1';
+}
