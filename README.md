@@ -1,6 +1,6 @@
-# vscode-dev-plan README
+# vsCode Dev-Plan
 
-This is the README for extension "vscode-dev-plan". After writing up a brief description, we recommend including the following sections.
+![preview](media/vscode-dev-plan-preview.png)
 
 ## Features
 
@@ -12,18 +12,15 @@ Allows you to plan time and control the execution of the plan.
 This extension contributes the following settings:
 
 * `vscode-dev-plan.PathToPlans`: Path to catalog for your plans
+* `vscode-dev-plan.TimeFormat`: Time output format
 
 ## Known Issues
 
-None
+See in [Known Issues](KnownIssues.md)
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
-### 0.1.0
-
-Initial release of vscode-dev-plan
+See in [CHANGELOG](CHANGELOG.md)
 
 -----------------------------------------------------------------------------------------------------------
 

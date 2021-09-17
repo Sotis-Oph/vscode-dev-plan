@@ -8,79 +8,272 @@
 
 	// @ts-ignore
 	const vscode = acquireVsCodeApi();
+	
+	let timeFormat = 'time';
 
-	const addButtonContainer = document.querySelector('.add-button');
-	addButtonContainer.querySelector('button').addEventListener('click', () => {
-		vscode.postMessage({
-			type: 'add'
+	const tableContainer = /** @type {HTMLTableElement} */ (document.querySelector('.stepTable'));
+	tableContainer.style.width = '100%';
+	tableContainer.setAttribute('border', '1');
+	
+	function addTableFoot(json, tableContainer) {
+	
+		const tfoot = document.createElement('tfoot');
+		const tf = document.createElement('tr');
+		
+		let td = document.createElement('td');
+		td.setAttribute('colspan', '2');
+		td.innerText = '';
+		tf.appendChild(td);
+	
+		td = document.createElement('td');
+		td.className = 'planTime';
+		td.innerText = toTime(json.planTime);
+		tf.appendChild(td);
+	
+		td = document.createElement('td');
+		td.className = 'realTime';
+		td.innerText = toTime(json.realTime);
+		tf.appendChild(td);
+	
+		td = document.createElement('td');
+		td.setAttribute('colspan', '3');
+		td.innerText = '';
+		tf.appendChild(td);
+	
+		tfoot.appendChild(tf);
+		tableContainer.appendChild(tfoot);
+	}
+	
+	function addTableHead(tableContainer) {
+	
+		const addTh = (
+			/** @type {HTMLTableRowElement} */ owner,
+			/** @type {string} */ elementType,
+			/** @type {string} */ value,
+			/** @type {string} */ className
+		) => {
+			let el = document.createElement(elementType);
+			el.innerText = value;
+			el.className = className;
+			owner.appendChild(el);
+		}
+	
+		const thead = document.createElement('thead');
+		const tr = document.createElement('tr');
+	
+		addTh(tr, 'th', '#', 'num-h');
+		addTh(tr, 'th', 'Step', 'step-h');
+		addTh(tr, 'th', 'Plan time', 'planTime-h');
+		addTh(tr, 'th', 'Real time', 'realTime-h');
+		addTh(tr, 'th', 'Done', 'done-h');
+		addTh(tr, 'th', '', 'action-td');
+	
+		thead.appendChild(tr);
+		tableContainer.appendChild(thead);
+	}
+	
+	const toTime = (value) => {
+		if (timeFormat == 'time'){
+			if (typeof value === 'string' && /\d+\:\d\d/.test(value)) return value;
+			if (typeof value === 'string' && /\d*([.,]\d+)?/.test(value)){
+				value = parseFloat(value.replace(/,/, '.'));
+			};
+			if (typeof value === 'number' && Number.isFinite(value)) {
+				let h = Math.trunc(value).toString();
+				let l = Math.trunc(60 * (value - Math.trunc(value))).toString();
+				return h + ':' + ((l.length == 1)? '0' + l: l);
+			};
+			return value;
+		}
+		else {
+			if (typeof value == 'number') return value
+			else value = value.toString();
+			if (/\d+\:\d\d/.test(value)) {
+				let arr = value.split(/:/);
+				return parseInt(arr[0]) + parseInt(arr[1]) / 60;
+			} else {
+				return parseFloat(value.replace(/,/g, '.'));
+			}
+		}
+	}
+		
+	const addAction = (
+		/** @type {HTMLElement} */ el,
+		/** @type {string} */ id,
+		edit = true,
+		notEnter = false,
+		selectAll = false
+	) => {
+		if (selectAll) {
+			el.addEventListener('focus', () => {
+				// @ts-ignore
+				el.startEditValue = el.innerText;
+				let selection = window.getSelection();
+				let range = document.createRange();
+				range.selectNodeContents(el);
+				selection.removeAllRanges();
+				selection.addRange(range);
+			});
+		} else if (edit) {
+			el.addEventListener('focus', () => {
+				// @ts-ignore
+				el.startEditValue = el.innerText;
+			});
+		}
+		if (edit && notEnter) {
+			el.addEventListener('keypress', (e) => {
+				if (e.code == 'Enter') {
+					e.preventDefault();
+					e.stopImmediatePropagation();
+				};
+			});
+		}
+		if (edit) {
+			el.addEventListener('blur', () => {
+				// @ts-ignore
+				if (el.startEditValue != el.innerText) vscode.postMessage(
+					{ type: 'edit', field: el.className, id: id, value: el.innerText }
+				);
+			});
+		}
+	}
+
+	const addElement = (
+		/** @type {HTMLTableRowElement} */ owner,
+		/** @type {string} */ elementType,
+		/** @type {any} */ value,
+		/** @type {string} */ className,
+		/** @type {string} */ id,
+		/** @type {string} */ rowSpan,
+		/** @type {boolean} */ selectAll,
+		editable = true
+	) => {
+		let el = document.createElement(elementType);
+		el.id = className + '_' + id;
+		if (editable) el.setAttribute('contenteditable', 'true');
+		if (rowSpan != undefined)
+			el.setAttribute('rowspan', rowSpan);
+		el.innerText = value;
+		el.className = className;
+		addAction(el, id, editable, true, selectAll);
+		owner.appendChild(el);
+	}
+
+	const addActionButton = (
+		/** @type {{ id: string; }} */ step,
+		/** @type {HTMLTableCellElement} */ td,
+		/** @type {string} */ buttonText,
+		/** @type {string} */ clickAction
+	) => {
+
+		const actionButton = document.createElement('button');
+		actionButton.id = clickAction + '-button_' + step.id;
+		actionButton.className = clickAction + '-button button';
+		actionButton.tabIndex = -1;
+		actionButton.textContent = buttonText;
+		actionButton.addEventListener('click', () => {
+			vscode.postMessage({ type: clickAction, id: step.id, });
 		});
+		td.appendChild(actionButton);
+	}
+
+	const loop = (/** @type {HTMLTableSectionElement} */ tbody, /** @type {array} */ arr) => {
+		for (const step of arr || []) {
+
+			const lineCount = (step.description == '') ? undefined : '2';
+
+			let tr = document.createElement('tr');
+
+			let td = document.createElement('td');
+			td.className = 'num';
+			td.id = 'num_' + step.id;
+			if (lineCount) td.setAttribute('rowspan', lineCount);
+			td.innerText = step.num;
+			tr.appendChild(td);
+
+			addElement(tr, 'td', step.step, 'step', step.id);
+			addElement(tr, 'td', toTime(step.planTime), 'planTime', step.id, lineCount, true, step.subStep?.length == 0);
+			addElement(tr, 'td', toTime(step.realTime), 'realTime', step.id, lineCount, true, step.subStep?.length == 0);
+
+			td = document.createElement('td');
+			td.id = 'done_' + step.id;
+			td.className = 'done';
+			if (lineCount) td.setAttribute('rowspan', '2')
+			const check = document.createElement('input');
+			check.id = 'check_' + step.id;
+			check.type = 'checkbox';
+			check.checked = step.done;
+			check.disabled = step.subStep?.length > 0 ?? false;
+			check.addEventListener('change', () => {
+				vscode.postMessage({ type: 'edit', field: 'done', id: step.id, value: check.checked });
+			});
+			td.appendChild(check);
+			tr.appendChild(td);
+
+			td = document.createElement('td');
+			td.id = 'action-td_' + step.id;
+			td.className = 'action-td';
+			td.tabIndex = -1;
+			if (lineCount) td.setAttribute('rowspan', lineCount);
+
+			addActionButton(step, td, '\u2716', 'delete');
+			addActionButton(step, td, '\u25b2', 'up');
+			addActionButton(step, td, '\u25bc', 'down');
+			addActionButton(step, td, '\u2380', 'insert');
+			if (step.description == '') addActionButton(step, td, '\u2026', 'desc');
+			// addActionButton(step, td, '\u2380', 'right');
+
+			tr.appendChild(td);
+			tbody.appendChild(tr);
+
+			if (step.description != '') {
+				const tr = document.createElement('tr');
+				const ds = document.createElement('td');
+				ds.id = 'description_' + step.id;
+				ds.setAttribute('contenteditable', 'true');
+				ds.innerText = step.description;
+				ds.className = 'description';
+				addAction(ds, step.id, true);
+				tr.appendChild(ds);
+				tbody.appendChild(tr);
+			};
+			loop(tbody, step.subStep);
+		};
+
+	}
+	
+	document.getElementById('add-button').querySelector('button').addEventListener('click', () => {
+		vscode.postMessage({ type: 'add' });
 	})
 
 	const errorContainer = document.createElement('div');
 	document.body.appendChild(errorContainer);
 	errorContainer.className = 'error'
 	errorContainer.style.display = 'none'
-	
-	const tableContainer = /** @type {HTMLTableElement} */ (document.querySelector('.stepTable'));
-	tableContainer.style.width  = '100%';
-	tableContainer.setAttribute('border', '1');
-    
+
 	const descriptionContainer = /** @type {HTMLDivElement} */ (document.getElementById('description-container'));
 	descriptionContainer.setAttribute('contenteditable', 'true');
 	descriptionContainer.setAttribute('border', '1');
 	descriptionContainer.style.width = '100%';
 	descriptionContainer.style.height = '100%';
-	descriptionContainer.addEventListener('focus', () => {
-		// @ts-ignore
-		descriptionContainer.startEditValue = descriptionContainer.innerText;
-	});
-	descriptionContainer.addEventListener('blur', () => {
-		// @ts-ignore
-		if (descriptionContainer.startEditValue != descriptionContainer.innerText) vscode.postMessage({ type: 'edit', field:'description', id: '', value: descriptionContainer.innerText});
-	});
-	
+	addAction(descriptionContainer, '');
+
 	const ticketContainer = /** @type {HTMLSpanElement} */ (document.getElementById('ticket'));
 	ticketContainer.setAttribute('contenteditable', 'true');
-	ticketContainer.addEventListener('focus', () => {
-		// @ts-ignore
-		ticketContainer.startEditValue = ticketContainer.innerText;
-	});
-	ticketContainer.addEventListener('blur', () => {
-		// @ts-ignore
-		if (ticketContainer.startEditValue != ticketContainer.innerText) vscode.postMessage({ type: 'edit', field:'ticket', id: '', value: ticketContainer.innerText});
-	});
-	ticketContainer.addEventListener('keypress', (e) => {
-		if (e.code == 'Enter'){ 
-			e.preventDefault();
-			e.stopImmediatePropagation();
-		};
-	});
+	addAction(ticketContainer, '', true, true);
 
 	const captionContainer = /** @type {HTMLSpanElement} */ (document.getElementById('caption'));
 	captionContainer.setAttribute('contenteditable', 'true');
-	captionContainer.addEventListener('focus', () => {
-		// @ts-ignore
-		captionContainer.startEditValue = captionContainer.innerText;
-	});
-	captionContainer.addEventListener('blur', () => {
-		// @ts-ignore
-		if (captionContainer.startEditValue != captionContainer.innerText) vscode.postMessage({ type: 'edit', field:'caption', id: '', value: captionContainer.innerText});
-	});
-	captionContainer.addEventListener('keypress', (e) => {
-		if (e.code == 'Enter'){ 
-			e.preventDefault();
-			e.stopImmediatePropagation();
-		};
-	});
+	addAction(captionContainer, '', true, true);
 
 	/**
 	 * Render the document in the webview.
 	 */
-	function updateContent(/** @type {string} */ text) {
+	function updateContent(/** @type {string} */ text, nawId) {
 		let json;
-		
+
 		const thisId = document.activeElement.id;
-		
+
 		try {
 			if (!text) {
 				text = '{}';
@@ -98,189 +291,21 @@
 
 		ticketContainer.innerText = json.ticket;
 		captionContainer.innerText = json.caption;
-	
-		// Render the scratches
+
 		tableContainer.innerHTML = '';
 
-		const addTh = function(	/** @type {HTMLTableRowElement} */ owner, 
-								/** @type {string} */ elementType, 
-								/** @type {string} */ value, 
-								/** @type {string} */ className){
-			let el = document.createElement(elementType);
-			el.innerText = value;
-			el.className = className;
-			owner.appendChild(el);
-		}
-
-		const addElement = function(/** @type {HTMLTableRowElement} */ owner, 
-									/** @type {string} */ elementType, 
-									/** @type {any} */ value, 
-									/** @type {string} */ className, 
-									/** @type {string} */ id, 
-									/** @type {string} */ rowSpan, 
-									/** @type {boolean} */ selectAll){
-			let el = document.createElement(elementType);
-			el.id = className + '_' + id;
-			el.setAttribute('contenteditable', 'true');
-			if(rowSpan != undefined) el.setAttribute('rowspan', rowSpan);
-			el.innerText = value;
-			el.className = className;
-			if (selectAll == true) {
-				el.addEventListener('focus', () => {
-					// @ts-ignore
-					el.startEditValue = el.innerText;
-					let selection = window.getSelection();        
-					let range = document.createRange();
-					range.selectNodeContents(el);
-					selection.removeAllRanges();
-					selection.addRange(range);
-				});
-			} else {
-				el.addEventListener('focus', () => {
-					// @ts-ignore
-					el.startEditValue = el.innerText;
-				});
-			}
-			el.addEventListener('keypress', (e) => {
-				if (e.code == 'Enter'){ 
-					e.preventDefault();
-					e.stopImmediatePropagation();
-				};
-			});
-			el.addEventListener('blur', () => {
-				// @ts-ignore
-				if (el.startEditValue != el.innerText) vscode.postMessage({ type: 'edit', field:className, id: id, value: el.innerText});
-			});
-			owner.appendChild(el);
-		}
-		const addActionButton = function(	/** @type {{ id: string; }} */ step, 
-											/** @type {HTMLTableCellElement} */ td, 
-											/** @type {string} */ buttonText, 
-											/** @type {string} */ clickAction) {
-			
-			const actionButton = document.createElement('button');
-			actionButton.id = clickAction + '-button_' + step.id;
-			actionButton.className = clickAction + '-button';
-			actionButton.tabIndex = -1;
-			actionButton.textContent = buttonText;
-			actionButton.addEventListener('click', () => {
-				vscode.postMessage({ type: clickAction, id: step.id, });
-			});
-			td.appendChild(actionButton);
-		}
-
-		const thead = document.createElement('thead');
-		const tr = document.createElement('tr');
-		
-		addTh(tr, 'th', '#', 'num-h');
-		addTh(tr, 'th', 'Step', 'step-h');
-		addTh(tr, 'th', 'Plan time', 'planTime-h');
-		addTh(tr, 'th', 'Real time', 'realTime-h');
-		addTh(tr, 'th', 'Done', 'done-h');
-		// addTh(tr, 'th', 'Description', 'description');
-		addTh(tr, 'th', '', 'action-td');
-		
-		thead.appendChild(tr);
-		tableContainer.appendChild(thead);
+		addTableHead(tableContainer);
 
 		let tbody = document.createElement('tbody');
-		for (const step of json.stepTable || []) {
-		
-			let tr = document.createElement('tr');
-
-			let td = document.createElement('td');
-			td.className = 'num';
-			td.id = 'num_' + step.id;
-			td.setAttribute('rowspan', '2')
-			td.innerText = step.num;
-			tr.appendChild(td);
-			
-			// td.style.border = '1px solid black'
-			// addElement(tr, 'td', step.num, 'num', step.id, "2");
-			addElement(tr, 'td', step.step, 'step', step.id);
-			addElement(tr, 'td', step.planTime, 'planTime', step.id, '2', true);
-			addElement(tr, 'td', step.realTime, 'realTime', step.id, '2', true);
-			// addElement(tr, 'td', step.done, 'done', step.id, '2');
-			// addElement(tr, 'td', step.description, 'description', step.id);
-			
-			td = document.createElement('td');
-			td.id = 'done_' + step.id;
-			td.className = 'done';
-			td.setAttribute('rowspan', '2')
-			const check = document.createElement('input');
-			check.id = 'check_' + step.id;
-			check.type = 'checkbox';
-			check.checked = step.done;
-			check.addEventListener('change', () => {
-				vscode.postMessage({ type: 'edit', field:'done', id: step.id, value: check.checked});
-			});
-			td.appendChild(check);
-			tr.appendChild(td);
-			
-			td = document.createElement('td');
-			td.id = 'action-td_' + step.id;
-			td.className = 'action-td';
-			td.tabIndex = -1;
-			td.setAttribute('rowspan', '2');
-			
-			addActionButton(step, td, '\u2716', 'delete');
-			addActionButton(step, td, '\u25b2', 'up');
-			addActionButton(step, td, '\u25bc', 'down');
-			addActionButton(step, td, '\u2380', 'insert');
-			
-			tr.appendChild(td);
-			
-			tbody.appendChild(tr);
-
-			tr = document.createElement('tr');
-			const ds = document.createElement('td');
-			ds.id = 'description_' + step.id;
-			ds.setAttribute('contenteditable', 'true');
-			ds.innerText = step.description;
-			ds.className = 'description';
-			ds.addEventListener('focus', () => {
-				// @ts-ignore
-				ds.startEditValue = ds.innerText;
-			});
-			ds.addEventListener('blur', () => {
-				// @ts-ignore
-				if (ds.startEditValue != ds.innerText) vscode.postMessage({ type: 'edit', field:'description', id: step.id, value: ds.innerText});
-			});
-			tr.appendChild(ds);
-			tbody.appendChild(tr);
-
-		}
-
+		loop(tbody, json.stepTable);
 		tableContainer.appendChild(tbody);
 
-		const tfoot = document.createElement('tfoot');
-		const tf = document.createElement('tr');
-		let td = document.createElement('td');
-		td.setAttribute('colspan', '2')
-		td.innerText = '';
-		tf.appendChild(td);
-		
-		td = document.createElement('td');
-		td.className = 'planTime';
-		td.innerText = json.planTime;
-		tf.appendChild(td);
-
-		td = document.createElement('td');
-		td.className = 'realTime';
-		td.innerText = json.realTime;
-		tf.appendChild(td);
-
-		td = document.createElement('td');
-		td.setAttribute('colspan', '3')
-		td.innerText = '';
-		tf.appendChild(td);
-
-		tfoot.appendChild(tf);
-		tableContainer.appendChild(tfoot);
+		addTableFoot(json, tableContainer);
 
 		descriptionContainer.innerText = json.description;
-
-		if (thisId != '') document.getElementById(thisId).focus();
+		
+		if (nawId != '') {document.getElementById('step_' + nawId)?.focus() } 
+		else if (thisId != '') document.getElementById(thisId).focus();
 
 	}
 
@@ -290,9 +315,9 @@
 		switch (message.type) {
 			case 'update':
 				const text = message.text;
-
+				timeFormat = message.timeFormat;
 				// Update our webview's content
-				updateContent(text);
+				updateContent(text, message.nawId);
 
 				// Then persist state information.
 				// This state is returned in the call to `vscode.getState` below when a webview is reloaded.

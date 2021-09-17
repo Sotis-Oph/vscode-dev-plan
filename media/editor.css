@@ -1,46 +1,69 @@
-.caption {
-    font-size: large;
-    font-weight: bold;
-    text-align: left;
+.button {
+  /* background-color: whitesmoke; */
+  border: 1px solid;
+  border-radius: 4px;
+  /* color: black; */
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  transition-duration: 0.4s;
+  cursor: pointer;
+  padding: 0px 0px;
 }
 
-.ticket {
-    color: cornflowerblue;
-    text-decoration: underline;
+.button:hover {
+  background-color: cornflowerblue;
+  color: white;
 }
 
-.delete-button, .up-button, .down-button, .insert-button{
-	width: 30px;
-    height: 30px;
+.delete-button,
+.up-button,
+.down-button,
+.insert-button,
+.desc-button {
+  width: 32px;
+  height: 21px;  
 }
 
 .action-td {
-    width: 121px;
-    align-content: center;
+  width: 161px;
+  vertical-align: top;
 }
 
-.planTime, .realTime {
-	width: 50px;
-    align-content: center;
-    padding-left: 10px;
+.caption {
+  font-size: large;
+  font-weight: bold;
+  text-align: left;
+}
+
+.ticket {
+  color: cornflowerblue;
+  text-decoration: underline;
+}
+
+.planTime,
+.realTime {
+  width: 50px;
+  align-content: center;
+  padding-left: 10px;
 }
 
 .num {
-    width: 40px;
-    align-content: center;
-    padding-left: 10px;
+  width: 40px;
+  align-content: center;
+  padding-left: 10px;
 }
 
 .done {
-    width: 40px;
-    align-content: center;
+  width: 40px;
+  align-content: center;
 }
 
 .step {
-    font-weight: bold;
+  font-weight: bold;
 }
 
 .stepTable {
-    border-width: 1px;
-    border: '1';
+  border-width: 1px;
+  border: "1";
 }

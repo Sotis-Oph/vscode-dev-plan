@@ -2,13 +2,17 @@
 	"name": "vscode-dev-plan",
 	"displayName": "vsCode Dev-Plan",
 	"description": "Allows you to solve simple development plans, evaluate time and monitor execution.",
-	"author": {"name": "Астафьев Сергей"},
 	"publisher": "Sotis-Oph",
+	"author": {"name": "Астафьев Сергей"},
+	"license": "SEE LICENSE IN LICENSE.md",
+	"version": "0.2.0",
+	"preview": true,
+	"icon": "media/vscode-dev-plan-icon.png",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Sotis-Oph/vscode-dev-plan.git"
 	},
-	"version": "0.1.0",
+	"keywords": ["developer","planing"],
 	"engines": {
 		"vscode": "^1.60.0"
 	},
@@ -46,6 +50,19 @@
 					"type":"string",
 					"default": "",
 					"description": "Path to plan files"
+				},
+				"vscode-dev-plan.TimeFormat":{
+					"type":"string",
+					"default": "time",
+					"description": "Time output format",
+					"enum": [
+						"time",
+						"number"
+					],
+					"markdownEnumDescriptions": [
+						"Display time in format **h:mm**",
+						"Display time as a decimal number"
+					]
 				}
 			}
 		}

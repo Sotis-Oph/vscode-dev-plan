@@ -13,15 +13,15 @@ export function activate(context: vscode.ExtensionContext) {
 	// This line of code will only be executed once when your extension is activated
 	console.log('Extension "vscode-dev-plan" is now active!');
 	
-	const setting = vscode.workspace.getConfiguration('vscode-dev-plan');
-	const defPath:string|undefined = setting.get('PathToPlans');
-
 	context.subscriptions.push(vscode_dev_plan_PlanEditor.register(context));
 	
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('vscode-dev-plan.CreateDevPlan', async () => {
+		
+		const setting = vscode.workspace.getConfiguration('vscode-dev-plan');
+		const defPath:string|undefined = setting.get('PathToPlans');
 		
 		if (defPath === undefined || defPath?.length == 0) {
 			vscode.window.showInformationMessage('vsCode Dev-plan not set path to plan ');
@@ -36,11 +36,19 @@ export function activate(context: vscode.ExtensionContext) {
 		};
 		const PlanName = await vscode.window.showInputBox(iBoxOption);
 		if (PlanName === undefined) return;
+		let ticket = '';
+		let name = PlanName;
+		const regExpTicket = /^\s*#\d+\s+/;
+		if(regExpTicket.test(PlanName)){
+			let arr = regExpTicket.exec(PlanName);
+			if (arr != null) ticket = arr[0].replace(/#/g, '').trim();
+			name = PlanName.replace(regExpTicket, '');
+		}
 		uri = vscode.Uri.joinPath(uri, PlanName.replace(/\s+/g, '_') + '.devplan');
-		const newItem = {id:newGuid(),num:1,step:'Planning',planTime:0,realTime:0,done:false,description:'Planning primarily'};
+		const newItem = {id:newGuid(),num:1,step:'Planning',planTime:0,realTime:0,done:false,description:'Planning primarily',subStep:[]};
 		const DefStruct = {
-			caption:PlanName,
-			ticket:'',
+			caption:name,
+			ticket:ticket,
 			stepTable:[newItem],
 			planTime:0,
 			realTime:0,
@@ -50,9 +58,10 @@ export function activate(context: vscode.ExtensionContext) {
 		writeFile(uri.fsPath, 
 			JSON.stringify(DefStruct), 
 			{encoding:'utf-8'},
-			()=>{
-				vscode.commands.executeCommand('vscode.openWith', uri, vscode_dev_plan_PlanEditor.viewType);
+			async ()=>{
+				await vscode.commands.executeCommand('vscode.openWith', uri, vscode_dev_plan_PlanEditor.viewType);
 			});
+			
 	});
 
 	context.subscriptions.push(disposable);
