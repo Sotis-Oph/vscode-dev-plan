@@ -1,5 +1,5 @@
 import * as vscode from "vscode";
-import { newGuid } from "./guid";
+import { uuid_v4 } from "./guid";
 
 export class vscode_dev_plan_PlanEditor
 	implements vscode.CustomTextEditorProvider {
@@ -15,6 +15,7 @@ export class vscode_dev_plan_PlanEditor
 	static readonly viewType = "vscode-dev-plan.PlanEditor";
 
 	private guidNewLine: string = '';
+	private lifeEdit: boolean = false;
 	private setting = vscode.workspace.getConfiguration('vscode-dev-plan');
 
 	constructor(private readonly context: vscode.ExtensionContext) { }
@@ -28,14 +29,14 @@ export class vscode_dev_plan_PlanEditor
 		webviewPanel: vscode.WebviewPanel,
 		_token: vscode.CancellationToken
 	): Promise<void> {
-		
+
 		// Setup initial content for the webview
 		webviewPanel.webview.options = {
 			enableScripts: true,
 		};
 		webviewPanel.webview.html = this.getHtmlForWebview(webviewPanel.webview);
-		
-		function updateWebview(timeFormat:string, nawId = ''): void {
+
+		function updateWebview(timeFormat: string, nawId = ''): void {
 			webviewPanel.webview.postMessage({
 				type: "update",
 				text: document.getText(),
@@ -54,10 +55,10 @@ export class vscode_dev_plan_PlanEditor
 
 		const changeDocumentSubscription = vscode.workspace.onDidChangeTextDocument(
 			(e) => {
-				if (e.document.uri.toString() === document.uri.toString()) {
+				if (!this.lifeEdit && e.document.uri.toString() === document.uri.toString()) {
 					updateWebview(this.setting.get('TimeFormat') ?? 'time', this.guidNewLine);
 					this.guidNewLine = '';
-				}
+				};
 			}
 		);
 
@@ -78,10 +79,17 @@ export class vscode_dev_plan_PlanEditor
 					return;
 
 				case "edit":
+					this.lifeEdit = false;
+					this.editStep(document, e.field, e.value, e.id);
+					return;
+
+				case "lifeEdit":
+					this.lifeEdit = true;
 					this.editStep(document, e.field, e.value, e.id);
 					return;
 
 				case 'desc':
+					this.guidNewLine = 'description_' + e.id;
 					this.editStep(document, 'description', 'new description', e.id);
 					return;
 
@@ -123,8 +131,9 @@ export class vscode_dev_plan_PlanEditor
 		const styleEditorUri = webview.asWebviewUri(
 			vscode.Uri.joinPath(this.context.extensionUri, "media", "editor.css")
 		);
+
 		// Use a nonce to whitelist which scripts can be run
-		const nonce = newGuid();
+		const nonce = uuid_v4();
 
 		return /* html */ `
 			<!DOCTYPE html>
@@ -142,7 +151,7 @@ export class vscode_dev_plan_PlanEditor
 
 				<link href="${styleVSCodeUri}" rel="stylesheet" />
 				<link href="${styleEditorUri}" rel="stylesheet" />
-
+				
 				<title>Dev plan</title>
 			</head>
 			<body>
@@ -156,16 +165,18 @@ export class vscode_dev_plan_PlanEditor
 				<div id="add-button" class="add-button">
 					<button class="button">Add step</button>
 				</div>
-				<div id="description-container" class="description"></div>
+				<pre id="description-container" class="description"></pre>
 				<script nonce="${nonce}" src="${scriptUri}"></script>
+				
 			</body>
 			</html>`;
 	}
 
 	private newItem = () => {
-		this.guidNewLine = newGuid();
+		const NewLine = uuid_v4();
+		this.guidNewLine = 'step_' + NewLine;
 		return {
-			id: this.guidNewLine,
+			id: NewLine,
 			num: '',
 			step: 'New step',
 			planTime: 0,
@@ -186,7 +197,7 @@ export class vscode_dev_plan_PlanEditor
 					el.done = el.subStep.every((elem: { done: any; }) => elem.done);
 					el.planTime = 0;
 					el.realTime = 0;
-					el.subStep.forEach((elem:any) => {
+					el.subStep.forEach((elem: any) => {
 						el.planTime += elem.planTime;
 						el.realTime += elem.realTime;
 					});
@@ -197,7 +208,7 @@ export class vscode_dev_plan_PlanEditor
 
 		json.planTime = 0;
 		json.realTime = 0;
-		json.stepTable.forEach((elem:any) => {
+		json.stepTable.forEach((elem: any) => {
 			json.planTime += elem.planTime;
 			json.realTime += elem.realTime;
 		});
@@ -310,6 +321,7 @@ export class vscode_dev_plan_PlanEditor
 						} else {
 							value = parseFloat(value.replace(/,/g, '.'));
 						};
+						if (isNaN(value)) value = 0;
 					}
 					el[field] = value;
 					return;

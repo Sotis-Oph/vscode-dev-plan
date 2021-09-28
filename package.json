@@ -3,16 +3,21 @@
 	"displayName": "vsCode Dev-Plan",
 	"description": "Allows you to solve simple development plans, evaluate time and monitor execution.",
 	"publisher": "Sotis-Oph",
-	"author": {"name": "Астафьев Сергей"},
+	"author": {
+		"name": "Астафьев Сергей"
+	},
 	"license": "SEE LICENSE IN LICENSE.md",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"preview": true,
 	"icon": "media/vscode-dev-plan-icon.png",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/Sotis-Oph/vscode-dev-plan.git"
 	},
-	"keywords": ["developer","planing"],
+	"keywords": [
+		"developer",
+		"planing"
+	],
 	"engines": {
 		"vscode": "^1.60.0"
 	},
@@ -38,23 +43,26 @@
 				"selector": [
 					{
 						"filenamePattern": "*.devplan"
+					},
+					{
+						"filenamePattern": "*.template_devplan"
 					}
 				],
 				"priority": "default"
 			}
 		],
-		"configuration":{
+		"configuration": {
 			"title": "vsCode Dev-Plan",
 			"properties": {
-				"vscode-dev-plan.PathToPlans":{
-					"type":"string",
+				"vscode-dev-plan.PathToPlans": {
+					"type": "string",
 					"default": "",
-					"description": "Path to plan files"
+					"markdownDescription": "Path to plan files"
 				},
-				"vscode-dev-plan.TimeFormat":{
-					"type":"string",
+				"vscode-dev-plan.TimeFormat": {
+					"type": "string",
 					"default": "time",
-					"description": "Time output format",
+					"markdownDescription": "Time output format",
 					"enum": [
 						"time",
 						"number"
@@ -63,6 +71,12 @@
 						"Display time in format **h:mm**",
 						"Display time as a decimal number"
 					]
+				},
+				"vscode-dev-plan.PlanTemplate":{
+					"type": "array",
+					"default": [],
+					"markdownDescription": "List of available templates",
+					"items": {"type": "string"}
 				}
 			}
 		}
@@ -87,5 +101,6 @@
 		"mocha": "^8.4.0",
 		"typescript": "^4.3.2",
 		"vscode-test": "^1.5.2"
-	}
+	},
+	"dependencies": {}
 }

@@ -10,6 +10,7 @@ Check [Keep a Changelog](https://keepachangelog.com/) for recommendations on how
 - Hotkeys
 - Copy/Paste
 - Export in MSExcel
+- Plan list panel
 
 ## [0.1.0] - 2021-09-14
 
@@ -33,3 +34,22 @@ Check [Keep a Changelog](https://keepachangelog.com/) for recommendations on how
 ### Removed
 
 - Inserting steps in the middle of the list.
+
+## [0.3.0] - 2021-09-28
+
+### Added
+
+- Indents and formatting of nested steps
+- Advanced text editing capabilities
+- Improved transitions between cells and automatic text selection
+- Improved editor communication with the stored file. Now when saving while editing text, it will not be lost
+- Added the ability to use templates
+- Add setting **PlanTemplate**. Contains a list of templates to select
+
+### Fixed
+
+- The problem of opening a file when creating a new plan with the path containing not ASCII characters
+
+### Changed
+
+- Changed the file creation scheme. The plan is not written on the disk when creating.
