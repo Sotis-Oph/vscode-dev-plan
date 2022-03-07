@@ -1,4 +1,6 @@
+import { execFileSync } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
+import { pathToFileURL } from 'url';
 import { TextDecoder } from 'util';
 import * as vscode from 'vscode';
 import { uuid_v4 } from './guid';
@@ -57,6 +59,58 @@ export function register_CreateDevPlan() {
                 const wsEdit = new vscode.WorkspaceEdit();
                 const edits = wsEdit.get(document.uri);
                 edits.push(vscode.TextEdit.insert(document.positionAt(0), getDefaultStructure(snippet, PlanName)));
+                wsEdit.set(document.uri, edits);
+                vscode.workspace.applyEdit(wsEdit);
+            }
+        );
+
+    });
+
+}
+
+export function register_CreateDevPlanTemplate() {
+    return vscode.commands.registerCommand('vscode-dev-plan.CreateDevPlanTemplate', async () => {
+
+        const setting = vscode.workspace.getConfiguration('vscode-dev-plan');
+        const defPath: string | undefined = setting.get('PathToPlans');
+
+        if (defPath === undefined || defPath?.length == 0) {
+            vscode.window.showInformationMessage('vsCode Dev-plan not set path to plan ');
+            return;
+        };
+        const PlanName = await vscode.window.showInputBox({
+            ignoreFocusOut: true,
+            prompt: 'Enter the Template Planname',
+            title: 'Template Planname',
+            value: 'NewTemplate'
+        });
+        if (PlanName === undefined) return;
+
+        const fileName = PlanName.replace(/\s+/g, '_') + '.template_devplan';
+
+        let uri = vscode.Uri.parse(defPath);
+        uri = vscode.Uri.joinPath(uri, 'template');
+        if (!existsSync(uri.fsPath)){
+            vscode.workspace.fs.createDirectory(uri);
+        };
+        uri = vscode.Uri.joinPath(uri, fileName);
+
+        if (existsSync(uri.fsPath)) {
+            vscode.commands.executeCommand('vscode.openWith', uri, vscode_dev_plan_PlanEditor.viewType);
+            vscode.window.showInformationMessage('Open exists file: ' + fileName);
+            return;
+        }
+
+        uri = vscode.Uri.joinPath(vscode.Uri.from({
+            scheme: 'untitled',
+            path: defPath,
+        }), 'template', fileName);
+
+        vscode.workspace.openTextDocument(uri).then(
+            document => {
+                const wsEdit = new vscode.WorkspaceEdit();
+                const edits = wsEdit.get(document.uri);
+                edits.push(vscode.TextEdit.insert(document.positionAt(0), getDefaultStructure('default', PlanName)));
                 wsEdit.set(document.uri, edits);
                 vscode.workspace.applyEdit(wsEdit);
             }
